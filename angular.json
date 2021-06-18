@@ -20,6 +20,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
+            "baseHref": "portfolio3d",
             "outputPath": "dist/ng-web-portfolio",
             "index": "src/index.html",
             "main": "src/main.ts",
@@ -34,7 +35,6 @@
               "src/styles/styles.scss"
             ],
             "scripts": []
-
           },
           "configurations": {
             "production": {
@@ -42,7 +42,7 @@
                 {
                   "type": "initial",
                   "maximumWarning": "500kb",
-                  "maximumError": "1mb"
+                  "maximumError": "5mb"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -104,6 +104,10 @@
             ],
             "scripts": []
           }
+        },
+        "deploy": {
+          "builder": "angular-cli-ghpages:deploy",
+          "options": {}
         }
       }
     }
