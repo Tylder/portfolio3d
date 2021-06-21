@@ -1,10 +1,19 @@
+
+:host {
+  width: 100%;
+  height: 100%;
+}
+
 .wrapper {
-  height: calc(100vh - 16px);
+  height: 100%;
+  //height: calc(100vh - 16px);
+  width: 100%;
+
   //height: calc(100vh);
   //width: calc(100vw);
   //height: 100%;
   //width: 100%;
-  //position: fixed;
+  position: fixed;
   top: 0;
   left: 0;
   z-index: -99;
@@ -12,3 +21,57 @@
 canvas {
   //height: calc(100vh);
 }
+
+.backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  height: 100vh;
+  width: 100vw;
+
+  background-color: #150f09;
+  opacity: 50%;
+}
+
+.email-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 100vw;
+
+  .email-overlay {
+
+    padding: 10vw;
+
+    img {
+      max-width: 100%;
+    }
+
+    p {
+      color: white;
+      font-family: Roboto, sans-serif;
+    }
+
+  }
+
+}
+
+.hint-overlay {
+
+  position: absolute;
+  bottom: calc(100vh/20);
+  width: 100%;
+  height: 40px;
+
+  //left: 100px;
+
+  p {
+    color: white;
+    font-family: Roboto, sans-serif;
+  }
+}
+
+
+

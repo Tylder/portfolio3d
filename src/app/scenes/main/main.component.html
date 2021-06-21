@@ -1,4 +1,27 @@
 <div class="wrapper">
   <canvas #rCanvas id="rCanvas"></canvas>
-  <span id="fpsLabel"></span>
+<!--  <span id="fpsLabel"></span>-->
+  <div *ngIf="(hintText$ | async) as hintText"
+       class="hint-overlay"
+       fxLayout="row" fxLayoutAlign="center center">
+    <p>{{hintText}}</p>
+  </div>
+
+  <div *ngIf="isShowBackdrop$ | async" class="backdrop">
+
+  </div>
+
+  <div *ngIf="isShowEmail$ | async" class="email-container" fxLayout="row" fxLayoutAlign="center center">
+    <div class="email-overlay"
+         fxLayout="column" fxLayoutAlign="center center"
+         [cdkCopyToClipboard]="getEmailAddress()"
+         [appClickable]="true"
+         (appClickOutside)="closeEmailOverlay()"
+         [clickOutsideIgnoreFirstNoOfClicks]="1"
+         >
+      <img src="assets/images/email_white.png" [alt]=getEmailAddress()>
+      <p>Click to copy to clipboard</p>
+    </div>
+  </div>
 </div>
+
