@@ -1,19 +1,19 @@
+import {DOCUMENT} from '@angular/common';
 import {AfterViewInit, Component, ElementRef, Inject, NgZone, OnDestroy, ViewChild} from '@angular/core';
-
 import {BehaviorSubject, combineLatest, fromEvent, Observable, ReplaySubject, Subject} from 'rxjs';
 import {filter, map, take, takeUntil, tap, withLatestFrom} from 'rxjs/operators';
 import {WindowSizeService} from '../../services/window-size.service';
-
 import {PickingInfo} from '@babylonjs/core/Collisions/pickingInfo';
 import {filterNil} from '../../rxjs_ops/FilterNil';
 import {environment} from '../../../environments/environment';
 import {BabylonSceneService} from '../../services/babylon-scene.service';
+
+/* BABYLON IMPORTS */
 import {AbstractMesh, Mesh} from '@babylonjs/core/Meshes';
-import {Scalar} from '@babylonjs/core/Maths';
+import {Color3, Scalar} from '@babylonjs/core/Maths';
 import {Scene} from '@babylonjs/core/scene';
-import {DOCUMENT} from '@angular/common';
 import {Animation as BabylonAnimation} from '@babylonjs/core/Animations';
-import {Color3} from '@babylonjs/core';
+
 
 export interface CameraLimits {
   minX: number;
@@ -142,6 +142,7 @@ export class MainComponent implements AfterViewInit, OnDestroy {
       this.createFanAnimations(scene);
       this.create24HrsOpenAnimation(scene);
       this.babylonSceneService.start(this.ngZone, true);
+
     })
   }
 
@@ -154,10 +155,6 @@ export class MainComponent implements AfterViewInit, OnDestroy {
   }
 
   closeEmailOverlay() {
-    console.log('test123123123');
-    console.log(this.isShowEmail$.value);
-
-
     this.isShowBackdrop$.next(false);
     this.isShowEmail$.next(false);
   }
@@ -349,13 +346,10 @@ export class MainComponent implements AfterViewInit, OnDestroy {
       })
     );
 
-    // this.tvClicked$.subscribe(val => console.log(val));
-
     this.handleTVClicks();
 
-    // this.babylonSceneService.camera.attachControl(this.canvasRef, true);
-
-    console.log(this.isTouchScreenDevice());
+    // this.babylonSceneService.camera.attachControl(this.canvasRef, true); // debug
+    // console.log(this.isTouchScreenDevice());
 
     if (!this.isTouchScreenDevice()) {
       this.moveCameraByMousePos();
@@ -364,7 +358,6 @@ export class MainComponent implements AfterViewInit, OnDestroy {
     }
 
     scene.registerBeforeRender(() => {
-
 
     });
   }
@@ -405,25 +398,6 @@ export class MainComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  openEmailModal() {
-    // const configs = new OverlayConfig({
-    //   hasBackdrop: true,
-    //   height: '100vh',
-    //   width: '100vw',
-    // });
-    //
-    // /// Center the modal
-    // configs.positionStrategy = this.overlayService.overlay.position()
-    //   .global()
-    //   .centerHorizontally()
-    //   .centerVertically();
-    //
-    // this.overlayService.openComponent<any, any>(
-    //   EmailModalComponent,
-    //   configs,
-    //   {}
-    // );
-  }
 
   createRelativeMousePos(): void {
     combineLatest(
@@ -467,36 +441,6 @@ export class MainComponent implements AfterViewInit, OnDestroy {
       })
     ).subscribe(relativePos => this.relativeMousePos$.next(relativePos));
   }
-  //
-  // onTVHover(event: ActionEvent): void {
-  //   console.log('hovered');
-  //   console.log(event);
-  //
-  //   const meshName = getTopMeshParent(event.meshUnderPointer as Mesh)?.name;
-  //
-  //   if (meshName === 'TV2') {
-  //     console.log('tv2');
-  //     // this.hintText$.next('Press to open github in second tab');
-  //   }
-  //
-  //   function getTopMeshParent(mesh: AbstractMesh): AbstractMesh {
-  //
-  //     if (mesh.parent != null) {
-  //       if (mesh.parent!.parent != null) {
-  //         return getTopMeshParent(mesh.parent as Mesh);
-  //       } else {
-  //         return mesh.parent as Mesh;
-  //       }
-  //     }
-  //
-  //     return mesh; // no parent
-  //   }
-  //
-  //   // console.log(this.getTopMeshParent(event.meshUnderPointer as Mesh));
-  //
-  //
-  // }
-
 
   getTopMeshParent(mesh: AbstractMesh): AbstractMesh {
 
@@ -510,9 +454,6 @@ export class MainComponent implements AfterViewInit, OnDestroy {
 
     return mesh; // no parent
   }
-
-
-
 
   toggleAllLights(): void {
     // const isOn = this.scene.lightsEnabled = !this.scene.lightsEnabled;

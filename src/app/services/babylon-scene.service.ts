@@ -1,6 +1,10 @@
 import {ElementRef, Injectable, NgZone} from '@angular/core';
 import {Observable} from 'rxjs';
-import {DeviceDetectorService} from 'ngx-device-detector'; // seems to be a bug with babylonJs that requires UniversalCamera to be imported like this
+import {tap} from 'rxjs/operators';
+import {fromPromise} from 'rxjs/internal-compatibility';
+import {DeviceDetectorService} from 'ngx-device-detector';
+
+/* BABYLON IMPORTS */
 import {SpotLight} from '@babylonjs/core/Lights';
 import {ShadowGenerator} from '@babylonjs/core/Lights/Shadows';
 import {AbstractMesh, Mesh} from '@babylonjs/core/Meshes';
@@ -12,16 +16,12 @@ import {Engine} from '@babylonjs/core/Engines';
 import {ReflectionProbe} from '@babylonjs/core/Probes';
 import {SceneLoader} from '@babylonjs/core/Loading';
 import {ActionEvent, ActionManager, ExecuteCodeAction} from '@babylonjs/core/Actions';
-
 import {VideoTextureSettings} from '@babylonjs/core/Materials/Textures/videoTexture';
 
-import {tap} from 'rxjs/operators';
-import {CameraController} from '../classes/cameraController';
-import {fromPromise} from 'rxjs/internal-compatibility';
-
+import {GlowLayer} from '@babylonjs/core/Layers';
+import '@babylonjs/core/Rendering/boundingBoxRenderer'; // seems to be a bug with babylonJs that requires boundingBoxRenderer to be imported like this for GlowLayer to work
 import {UniversalCamera} from '@babylonjs/core/Cameras';
-import '@babylonjs/core/Cameras/universalCamera';
-import {GlowLayer} from '@babylonjs/core';
+import '@babylonjs/core/Cameras/universalCamera'; // seems to be a bug with babylonJs that requires UniversalCamera to be imported like this
 
 @Injectable({
   providedIn: 'root'
@@ -30,12 +30,7 @@ export class BabylonSceneService {
 
   engine: Engine;
   canvas: HTMLCanvasElement;
-  // protected camera: ArcRotateCamera;
   camera: UniversalCamera;
-  cameraCtrl: CameraController;
-
-  // protected light: Light;
-  // cameraCenterPos: Vector3;
 
   shadowGenerators: ShadowGenerator[] = [];
 
@@ -61,8 +56,6 @@ export class BabylonSceneService {
   appendFromBabylonFile$(): Observable<any> {
     return fromPromise(
       SceneLoader.AppendAsync('assets/full_scene/', 'main.babylon', this.scene)
-    ).pipe(
-      // map(res => res.meshes as Mesh[])
     );
   }
 
@@ -98,10 +91,6 @@ export class BabylonSceneService {
   handleLoadedStaticBabylonFile(scene: Scene): void{
     /* CAMERA */
     this.camera = scene.cameras[0] as UniversalCamera;
-    // this.camera.attachControl(this.canvas, true);
-    // this.cameraCenterPos = this.camera.position;
-
-
 
     /* MATERIAL MAX LIGHTS LIMIT INCREASE */
     scene.materials.forEach((mat: Material) => {
@@ -138,8 +127,6 @@ export class BabylonSceneService {
     const glassNode: Mesh = scene.getNodeByName('GlassPane') as Mesh;
 
     glassNode.isPickable = false; // ignore glass
-    // glassNode.dispose();
-    // glassNode.isBlocked
 
     glassMat.baseColor = Color3.Black();
     glassMat.metallic = 0;
@@ -161,10 +148,6 @@ export class BabylonSceneService {
     }
 
     glassMat.environmentTexture = this.windowReflectionProbe.cubeTexture;
-
-    // const crossTheStreetLight: Light = scene.getNodeByName('CrossTheStreetLight') as Light;
-    // crossTheStreetLight.intensity = 10;
-
 
     /* SHADOWS */
     /* Create SHADOW GENERATORS */
@@ -188,8 +171,6 @@ export class BabylonSceneService {
     /* ADD MESHES TO GENERATORS */
     this.scene.meshes.forEach(mesh => {
 
-      // console.log(mesh);
-
       if (mesh instanceof Mesh) {
         mesh.receiveShadows = true;
       }
@@ -211,9 +192,6 @@ export class BabylonSceneService {
       }
     });
 
-
-
-
     /* TVs */
     this.topTV = scene.getNodeByName('TV2') as Mesh;
     this.middleTV = scene.getNodeByName('TV1') as Mesh;
@@ -230,16 +208,6 @@ export class BabylonSceneService {
     const topTVScreen: Mesh = this.topTV.getChildMeshes(false, (node) => node.name === 'kinescope')[0] as Mesh;
     const middleTVScreen: Mesh = this.middleTV.getChildMeshes(false, (node) => node.name === 'kinescope')[0] as Mesh;
     const bottomTVScreen: Mesh = this.bottomTV.getChildMeshes(false, (node) => node.name === 'kinescope')[0] as Mesh;
-
-
-    // const topTVScreenMat: PBRMetallicRoughnessMaterial = scene.getMaterialByName('tvScreenTopMat') as PBRMetallicRoughnessMaterial;
-    // const middleTVScreenMat: PBRMetallicRoughnessMaterial = scene.getMaterialByName('tvScreenMiddleMat') as PBRMetallicRoughnessMaterial;
-    // const bottomTVScreenMat: PBRMetallicRoughnessMaterial = scene.getMaterialByName('tvScreenBottomMat') as PBRMetallicRoughnessMaterial;
-
-
-    // this.registerHover(bottomTV, this.onTVHover);
-
-    // const topTVScreen: Mesh = topTV.getChildren((node) => node.name === 'kinescope')[0] as Mesh;
 
     const videoSettings: VideoTextureSettings = {
       autoPlay: true,
@@ -302,7 +270,6 @@ export class BabylonSceneService {
     gl.addExcludedMesh(topTVScreen);
     gl.addExcludedMesh(middleTVScreen);
     gl.addExcludedMesh(bottomTVScreen);
-
 
   }
 
@@ -381,45 +348,6 @@ export class BabylonSceneService {
       );
     }
   }
-
-  // // show axis
-  // showAxis(size: number): void {
-  //   var makeTextPlane = function(text, color, size) {
-  //     var dynamicTexture = new BABYLON.DynamicTexture("DynamicTexture", 50, scene, true);
-  //     dynamicTexture.hasAlpha = true;
-  //     dynamicTexture.drawText(text, 5, 40, "bold 36px Arial", color , "transparent", true);
-  //     var plane = new BABYLON.Mesh.CreatePlane("TextPlane", size, scene, true);
-  //     plane.material = new BABYLON.StandardMaterial("TextPlaneMaterial", scene);
-  //     plane.material.backFaceCulling = false;
-  //     plane.material.specularColor = new BABYLON.Color3(0, 0, 0);
-  //     plane.material.diffuseTexture = dynamicTexture;
-  //     return plane;
-  //   };
-  //
-  //   var axisX = BABYLON.Mesh.CreateLines("axisX", [
-  //     new BABYLON.Vector3.Zero(), new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, 0.05 * size, 0),
-  //     new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, -0.05 * size, 0)
-  //   ], scene);
-  //   axisX.color = new BABYLON.Color3(1, 0, 0);
-  //   var xChar = makeTextPlane("X", "red", size / 10);
-  //   xChar.position = new BABYLON.Vector3(0.9 * size, -0.05 * size, 0);
-  //   var axisY = BABYLON.Mesh.CreateLines("axisY", [
-  //     new BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3( -0.05 * size, size * 0.95, 0),
-  //     new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3( 0.05 * size, size * 0.95, 0)
-  //   ], scene);
-  //   axisY.color = new BABYLON.Color3(0, 1, 0);
-  //   var yChar = makeTextPlane("Y", "green", size / 10);
-  //   yChar.position = new BABYLON.Vector3(0, 0.9 * size, -0.05 * size);
-  //   var axisZ = BABYLON.Mesh.CreateLines("axisZ", [
-  //     new BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3( 0 , -0.05 * size, size * 0.95),
-  //     new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3( 0, 0.05 * size, size * 0.95)
-  //   ], scene);
-  //   axisZ.color = new BABYLON.Color3(0, 0, 1);
-  //   var zChar = makeTextPlane("Z", "blue", size / 10);
-  //   zChar.position = new BABYLON.Vector3(0, 0.05 * size, 0.9 * size);
-  // };
-
-
 
 
   start(ngZone: NgZone, inZone = true): void {
