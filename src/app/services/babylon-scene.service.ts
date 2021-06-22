@@ -51,7 +51,10 @@ export class BabylonSceneService {
   env: any;
   scene: Scene;
 
-  constructor(private deviceService: DeviceDetectorService) {}
+
+  constructor(private deviceService: DeviceDetectorService) {
+    console.log(this.deviceService.deviceType);
+  }
 
   appendFromBabylonFile$(): Observable<any> {
     return fromPromise(
@@ -83,21 +86,23 @@ export class BabylonSceneService {
 
     /* READ 3D SOFTWARE EXPORTED BABYLON FILE, APPEND IT TO THE SCENE AND DO SOME WORK ON IT */
     return this.appendFromBabylonFile$().pipe(
-      tap(res => console.log(res)),
+      // tap(nodes => console.log(nodes)),
       tap(scene => this.handleLoadedStaticBabylonFile(scene))
     );
   }
 
-  handleLoadedStaticBabylonFile(scene: Scene): void{
+  handleLoadedStaticBabylonFile(scene: Scene): void {
     /* CAMERA */
     this.camera = scene.cameras[0] as UniversalCamera;
 
     /* MATERIAL MAX LIGHTS LIMIT INCREASE */
     scene.materials.forEach((mat: Material) => {
-      // console.log(typeof mat);
       if (mat instanceof PBRMetallicRoughnessMaterial) {
-        // console.log(mat);
-        mat.maxSimultaneousLights = 6 // webGL device dependant error if set above 10
+        if ( this.deviceService.isDesktop() ) {
+          mat.maxSimultaneousLights = 6 // webGL device dependant error if set above 10
+        } else {
+          mat.maxSimultaneousLights = 3 // webGL device dependant error if set above 10
+        }
       }
     });
 
@@ -133,21 +138,32 @@ export class BabylonSceneService {
 
     glassMat.alpha = 0.5;
 
-    const reflectionBG: AbstractMesh = scene.getNodeByName('reflectionBG') as AbstractMesh;
-    const trashcan: AbstractMesh = scene.getNodeByName('trashcan_group') as AbstractMesh;
-    const bench: AbstractMesh = scene.getNodeByName('bench') as AbstractMesh;
+    /* GLASS REFLECTION */
+    // only on desktop
+    if ( this.deviceService.isDesktop() ) {
 
-    if (this.windowReflectionProbe.renderList != null) {
-      if (reflectionBG != null) { this.windowReflectionProbe.renderList.push(reflectionBG); }
-      if (trashcan != null) {
-        trashcan.getChildMeshes().forEach(mesh => {
-          if (mesh != null && this.windowReflectionProbe.renderList != null) { this.windowReflectionProbe.renderList.push(mesh); }
-        });
+      const reflectionBG: AbstractMesh = scene.getNodeByName('reflectionBG') as AbstractMesh;
+      // const trashcan: AbstractMesh = scene.getNodeByName('trashcan_group') as AbstractMesh;
+      // const bench: AbstractMesh = scene.getNodeByName('bench') as AbstractMesh;
+
+      if (this.windowReflectionProbe.renderList != null) {
+        if (reflectionBG != null) {
+          this.windowReflectionProbe.renderList.push(reflectionBG);
+        }
+        // if (trashcan != null) {
+        //   trashcan.getChildMeshes().forEach(mesh => {
+        //     if (mesh != null && this.windowReflectionProbe.renderList != null) {
+        //       this.windowReflectionProbe.renderList.push(mesh);
+        //     }
+        //   });
+        // }
+        // if (bench != null) {
+        //   this.windowReflectionProbe.renderList.push(bench);
+        // }
       }
-      if (bench != null) { this.windowReflectionProbe.renderList.push(bench); }
+      glassMat.environmentTexture = this.windowReflectionProbe.cubeTexture;
     }
 
-    glassMat.environmentTexture = this.windowReflectionProbe.cubeTexture;
 
     /* SHADOWS */
     /* Create SHADOW GENERATORS */
@@ -155,11 +171,18 @@ export class BabylonSceneService {
       if (light instanceof SpotLight) {
         // console.log(light);
 
-        // lower res shadows for dynamic lights
-        if( (this.lightNamesWithUpdatingShadows.includes(light.name)) ) {
-          this.shadowGenerators.push(
-            new ShadowGenerator(512, light)
-          );
+        if ((this.lightNamesWithUpdatingShadows.includes(light.name))) {
+          // lower res shadows for dynamic lights
+
+          if ( this.deviceService.isDesktop() ) {
+            this.shadowGenerators.push(
+              new ShadowGenerator(512, light)
+            );
+          } else {
+            this.shadowGenerators.push(
+              new ShadowGenerator(128, light)
+            );
+          }
         } else {
           this.shadowGenerators.push(
             new ShadowGenerator(1024, light)
@@ -187,7 +210,7 @@ export class BabylonSceneService {
 
     /* UPDATE JUST ONCE */
     this.shadowGenerators.forEach(gen => {
-      if( !(this.lightNamesWithUpdatingShadows.includes(gen.getLight().name)) ) {
+      if (!(this.lightNamesWithUpdatingShadows.includes(gen.getLight().name))) {
         gen!.getShadowMap()!.refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONCE;
       }
     });
@@ -220,7 +243,7 @@ export class BabylonSceneService {
 
     const githubVideoSources: string[] = [
       "assets/video/github/github.webm",
-      // "assets/video/github/github.mp4",
+      "assets/video/github/github.mp4",
     ];
 
     const githubMat = new StandardMaterial('githubMat', scene);
@@ -261,16 +284,18 @@ export class BabylonSceneService {
     bottomTVScreen.material = projectsMat;
 
     /* GLOW */
-    var gl = new GlowLayer("glow", this.scene, {
-      mainTextureFixedSize: 2048,
-      blurKernelSize: 256
-    });
-    gl.intensity = 1;
+    // only add glow on desktop due to performance
+    if ( this.deviceService.isDesktop() ) {
+      var gl = new GlowLayer("glow", this.scene, {
+        mainTextureFixedSize: 1024,
+        blurKernelSize: 256
+      });
+      gl.intensity = 1.5;
 
-    gl.addExcludedMesh(topTVScreen);
-    gl.addExcludedMesh(middleTVScreen);
-    gl.addExcludedMesh(bottomTVScreen);
-
+      gl.addExcludedMesh(topTVScreen);
+      gl.addExcludedMesh(middleTVScreen);
+      gl.addExcludedMesh(bottomTVScreen);
+    }
   }
 
   /**

@@ -11,7 +11,7 @@
 
   </div>
 
-  <div *ngIf="isShowEmail$ | async" class="email-container" fxLayout="row" fxLayoutAlign="center center">
+  <div *ngIf="isShowEmail$ | async" class="fullpage-container" fxLayout="row" fxLayoutAlign="center center">
     <div class="email-overlay"
          fxLayout="column" fxLayoutAlign="center center"
          [cdkCopyToClipboard]="getEmailAddress()"
@@ -23,5 +23,11 @@
       <p>Click to copy to clipboard</p>
     </div>
   </div>
+
+
+  <div *ngIf="isShowFps$ | async" fxLayout="row" fxLayoutAlign="end end"  class="fullpage-container">
+    <p class="fpsLabel">FPS: {{this.babylonSceneService.engine.getFps() | number: '1.2-2'}}</p>
+  </div>
+
 </div>
 

@@ -38,6 +38,10 @@ export class MainComponent implements AfterViewInit, OnDestroy {
     filter((event: KeyboardEvent) => event.code === 'Space')
   );
 
+  pKeyPressedEvent$: Observable<KeyboardEvent> = fromEvent<KeyboardEvent>(document.body, 'keydown').pipe(
+    filter((event: KeyboardEvent) => event.code === 'KeyP')
+  );
+
   relativeMousePos$: BehaviorSubject<{x: number, y: number} | undefined> =
     new BehaviorSubject<{x: number, y: number} | undefined>(undefined);
 
@@ -78,13 +82,14 @@ export class MainComponent implements AfterViewInit, OnDestroy {
   mouseMoveEvent$: Observable<any> = fromEvent<MouseEvent>(document.body, 'mousemove');
   clickEvent$: Observable<any>;
 
+  isShowFps$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+
   destroy$: Subject<any> = new Subject();
 
   constructor(@Inject(DOCUMENT) readonly doc: Document,
               private readonly ngZone: NgZone,
-              private babylonSceneService: BabylonSceneService,
+              public babylonSceneService: BabylonSceneService,
               private windowSizeService: WindowSizeService,
-
               ) {
 
     // this.deviceOrientation$.pipe(
@@ -226,8 +231,6 @@ export class MainComponent implements AfterViewInit, OnDestroy {
     /* FANS */
     const textHrs: Mesh = scene.getNodeByName('text_hrs') as Mesh;
 
-    console.log(textHrs);
-
     const baseColor = new Color3(0, 1, 0.1);
 
     const frameRate = 20;
@@ -314,7 +317,13 @@ export class MainComponent implements AfterViewInit, OnDestroy {
 
     // this.relativeMousePos$.subscribe(val => console.log(val));
 
-    this.spaceBarPressedEvent$.subscribe(() => this.toggleAllLights());
+    this.spaceBarPressedEvent$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(() => this.toggleAllLights());
+
+    this.pKeyPressedEvent$.pipe(
+      takeUntil(this.destroy$),
+    ).subscribe(() => this.isShowFps$.next(!this.isShowFps$.value));
 
     /* TVS*/
 

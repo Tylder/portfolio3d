@@ -34,29 +34,30 @@ canvas {
   opacity: 25%;
 }
 
-.email-container {
+.fullpage-container {
   position: absolute;
   top: 0;
   left: 0;
   height: 100vh;
   width: 100vw;
+}
 
-  .email-overlay {
 
-    padding: 2vw;
+.email-overlay {
 
-    img {
-      max-width: 100%;
-    }
+  padding: 2vw;
 
-    p {
-      color: white;
-      font-family: Roboto, sans-serif;
-    }
+  img {
+    max-width: 100%;
+  }
 
+  p {
+    color: white;
+    font-family: Roboto, sans-serif;
   }
 
 }
+
 
 .hint-overlay {
 
@@ -73,5 +74,12 @@ canvas {
   }
 }
 
+
+
+.fpsLabel {
+  padding: 10px;
+  color: white;
+  font-family: Roboto, sans-serif;
+}
 
 
