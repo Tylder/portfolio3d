@@ -13,6 +13,7 @@ import {Scalar} from '@babylonjs/core/Maths';
 import {Scene} from '@babylonjs/core/scene';
 import {DOCUMENT} from '@angular/common';
 import {Animation as BabylonAnimation} from '@babylonjs/core/Animations';
+import {Color3} from '@babylonjs/core';
 
 export interface CameraLimits {
   minX: number;
@@ -40,7 +41,32 @@ export class MainComponent implements AfterViewInit, OnDestroy {
   relativeMousePos$: BehaviorSubject<{x: number, y: number} | undefined> =
     new BehaviorSubject<{x: number, y: number} | undefined>(undefined);
 
-  test$: Observable<any> = fromEvent<any>(window, 'deviceorientation');
+  // relativeDeviceMotion$: BehaviorSubject<{x: number, y: number} | undefined> =
+  //   new BehaviorSubject<{x: number, y: number} | undefined>(undefined);
+  //
+  // deviceOrientation$: Observable<{alpha: number, beta: number, gamma: number}> = fromEvent<DeviceOrientationEvent>(window, 'deviceorientation').pipe(
+  //   map(or => {
+  //     return {
+  //       alpha: or.alpha ? or.alpha : 0,
+  //       beta: or.beta ? or.beta : 0,
+  //       gamma: or.gamma ? or.gamma : 0
+  //     }
+  //   }),
+  // );
+
+  // deviceAcceleration$: Observable<{x: number, y: number, z: number}> = fromEvent<DeviceMotionEvent>(window, 'devicemotion').pipe(
+  //   map((motion: DeviceMotionEvent) => motion.acceleration),
+  //   filterNil(),
+  //   map(acc => {
+  //     return {
+  //       x: acc.x ? acc.x : 0,
+  //       y: acc.y ? acc.y : 0,
+  //       z: acc.z ? acc.z : 0
+  //     }
+  //   }),
+  // );
+
+  deviceMotionPosition$: BehaviorSubject<{x: number, y: number, z: number}> = new BehaviorSubject({x: 0, y: 0, z: 0});
 
   cameraLimits: CameraLimits;
 
@@ -58,9 +84,16 @@ export class MainComponent implements AfterViewInit, OnDestroy {
               private readonly ngZone: NgZone,
               private babylonSceneService: BabylonSceneService,
               private windowSizeService: WindowSizeService,
+
               ) {
 
-    this.test$.subscribe(val => console.log(val));
+    // this.deviceOrientation$.pipe(
+    //   // debounceTime(200),
+    //   tap(val => console.log('A: ', val.alpha, ', b: ', val.beta, 'g: ', val.gamma))
+    // ).subscribe();
+
+    // this.deviceAcceleration$.pipe(
+    // ).subscribe(val => console.log(val));
 
     // Filter click events on whether the backdrop is shown
     this.clickEvent$ = fromEvent<MouseEvent>(document.body, 'click').pipe(
@@ -75,7 +108,25 @@ export class MainComponent implements AfterViewInit, OnDestroy {
       filter(isShow => isShow),
     ).subscribe(() => this.hintText$.next(null));
 
+    // this.deviceAcceleration$.pipe(
+    //   takeUntil(this.destroy$),
+    //   scan((acc, curr) => {
+    //     return {
+    //       x: acc.x + curr.x,
+    //       y: acc.y + curr.y,
+    //       z: acc.z + curr.z
+    //     }
+    //   }),
+    //   tap(val => console.log(val)),
+    // ).subscribe(pos => this.deviceMotionPosition$.next(pos));
 
+    // this.deviceMotionPosition$.subscribe(val => {
+    //   this.hintText$.next('x: ' + val.x + ', y:' + val.y)
+    // });
+
+    // this.deviceOrientation$.subscribe(or => {
+    //   this.hintText$.next('a: ' + or.alpha.toFixed(2) + ', b:' + or.beta.toFixed(2) + ', g:' + or.gamma.toFixed(2))
+    // });
 
   }
 
@@ -88,7 +139,8 @@ export class MainComponent implements AfterViewInit, OnDestroy {
       take(1)
     ).subscribe((scene: Scene) => {
       this.createAndListenForSceneActions(scene);
-      this.createAnimations(scene);
+      this.createFanAnimations(scene);
+      this.create24HrsOpenAnimation(scene);
       this.babylonSceneService.start(this.ngZone, true);
     })
   }
@@ -110,7 +162,7 @@ export class MainComponent implements AfterViewInit, OnDestroy {
     this.isShowEmail$.next(false);
   }
 
-  createAnimations(scene: Scene) {
+  createFanAnimations(scene: Scene) {
 
     /* FANS */
     const ceilingFan0: Mesh = scene.getNodeByName('CeilingFan') as Mesh;
@@ -172,6 +224,85 @@ export class MainComponent implements AfterViewInit, OnDestroy {
 
   }
 
+  create24HrsOpenAnimation(scene: Scene) {
+
+    /* FANS */
+    const textHrs: Mesh = scene.getNodeByName('text_hrs') as Mesh;
+
+    console.log(textHrs);
+
+    const baseColor = new Color3(0, 1, 0.1);
+
+    const frameRate = 20;
+    const textHrsFlickerAnim = new BabylonAnimation(
+      "textHrs_flicker",
+      "material.emissiveColor",
+      frameRate,
+      BabylonAnimation.ANIMATIONTYPE_COLOR3,
+      BabylonAnimation.ANIMATIONLOOPMODE_CYCLE,
+    )
+
+    const keyFrames = [
+      {
+        frame: 0,
+        value: baseColor
+      },
+      {
+        frame: 20,
+        value: baseColor
+      },
+      {
+        frame: 21,
+        value: new Color3(0, 0, 0.0)
+      },
+      {
+        frame: 22,
+        value: baseColor
+      },
+      {
+        frame: 25,
+        value: baseColor
+      },
+      {
+        frame: 26,
+        value: new Color3(0, 0, 0.0)
+      },
+      {
+        frame: 30,
+        value: new Color3(0, 0, 0.0)
+      },
+      {
+        frame: 31,
+        value: baseColor
+      },
+      {
+        frame: 32,
+        value: new Color3(0, 0, 0.0)
+      },
+      {
+        frame: 40,
+        value: new Color3(0, 0, 0.0)
+      },
+      {
+        frame: 41,
+        value: baseColor
+      },
+      {
+        frame: 200,
+        value: baseColor
+      },
+    ];
+
+    textHrsFlickerAnim.enableBlending = false;
+    textHrsFlickerAnim.blendingSpeed = 1;
+
+    textHrsFlickerAnim.setKeys(keyFrames);
+
+    textHrs.animations.push(textHrsFlickerAnim);
+
+    scene.beginAnimation(textHrs, 0, 200, true);
+  }
+
   createAndListenForSceneActions(scene: Scene) {
 
     /* CAMERA  LIMITS */
@@ -226,19 +357,20 @@ export class MainComponent implements AfterViewInit, OnDestroy {
 
     console.log(this.isTouchScreenDevice());
 
+    if (!this.isTouchScreenDevice()) {
+      this.moveCameraByMousePos();
+    } else {
+      this.moveCameraByDeviceMotion();
+    }
+
     scene.registerBeforeRender(() => {
 
-      if (!this.isTouchScreenDevice()) {
-        this.moveCameraByMousePos();
-      } else {
-        this.moveCameraByGyro();
-      }
+
     });
   }
 
   moveCameraByMousePos(): void {
     this.relativeMousePos$.pipe(
-      take(1),
       tap((relativePos) => {
         if (relativePos) {
           const newCamX = Scalar.Lerp(this.cameraLimits.minX, this.cameraLimits.maxX, relativePos.x);
@@ -250,18 +382,15 @@ export class MainComponent implements AfterViewInit, OnDestroy {
     ).subscribe()
   }
 
-  moveCameraByGyro(): void {
-    this.relativeMousePos$.pipe(
-      take(1),
-      tap((relativePos) => {
-        if (relativePos) {
-          const newCamX = Scalar.Lerp(this.cameraLimits.minX, this.cameraLimits.maxX, relativePos.x);
-          const newCamY = Scalar.Lerp(this.cameraLimits.minY, this.cameraLimits.maxY, relativePos.y);
-          this.babylonSceneService.camera.position.x = newCamX;
-          this.babylonSceneService.camera.position.y = newCamY;
-        }
-      })
-    ).subscribe()
+  moveCameraByDeviceMotion(): void {
+    // this.deviceAcceleration$.pipe(
+    //   tap((acc) => {
+    //     // const newCamX = Scalar.Lerp(this.cameraLimits.minX, this.cameraLimits.maxX, relativePos.x);
+    //     // const newCamY = Scalar.Lerp(this.cameraLimits.minY, this.cameraLimits.maxY, relativePos.y);
+    //     // this.babylonSceneService.camera.position.x = newCamX;
+    //     // this.babylonSceneService.camera.position.y = newCamY;
+    //   })
+    // ).subscribe()
   }
 
   handleTVClicks(): void {
@@ -311,6 +440,24 @@ export class MainComponent implements AfterViewInit, OnDestroy {
         )
       ]
     ).pipe(
+      // tap(val => console.log(val)),
+      map(([size, pos]) => {
+        return {
+          x: pos.x / size.width,
+          y: pos.y / size.height
+        }
+      })
+    ).subscribe(relativePos => this.relativeMousePos$.next(relativePos));
+  }
+
+  createRelativeDeviceMotion(): void {
+    combineLatest(
+      [
+        this.windowSizeService.windowSize$,
+        this.deviceMotionPosition$
+      ]
+    ).pipe(
+      takeUntil(this.destroy$),
       // tap(val => console.log(val)),
       map(([size, pos]) => {
         return {
@@ -370,7 +517,7 @@ export class MainComponent implements AfterViewInit, OnDestroy {
   toggleAllLights(): void {
     // const isOn = this.scene.lightsEnabled = !this.scene.lightsEnabled;
     this.babylonSceneService.scene.lights.forEach(light => {
-      console.log(light);
+      // console.log(light);
       light.setEnabled(!light.isEnabled());
     })
   }

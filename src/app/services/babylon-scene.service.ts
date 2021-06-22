@@ -1,12 +1,11 @@
 import {ElementRef, Injectable, NgZone} from '@angular/core';
 import {Observable} from 'rxjs';
-
-// import {UniversalCamera} from '@babylonjs/core';
+import {DeviceDetectorService} from 'ngx-device-detector'; // seems to be a bug with babylonJs that requires UniversalCamera to be imported like this
 import {SpotLight} from '@babylonjs/core/Lights';
 import {ShadowGenerator} from '@babylonjs/core/Lights/Shadows';
 import {AbstractMesh, Mesh} from '@babylonjs/core/Meshes';
 import {Color3} from '@babylonjs/core/Maths/math';
-import {Material, PBRMetallicRoughnessMaterial, StandardMaterial} from '@babylonjs/core/Materials';
+import {Material, PBRMetallicRoughnessMaterial, StandardMaterial, Texture} from '@babylonjs/core/Materials';
 import {RenderTargetTexture, VideoTexture} from '@babylonjs/core/Materials/Textures';
 import {Scene} from '@babylonjs/core/scene';
 import {Engine} from '@babylonjs/core/Engines';
@@ -21,7 +20,8 @@ import {CameraController} from '../classes/cameraController';
 import {fromPromise} from 'rxjs/internal-compatibility';
 
 import {UniversalCamera} from '@babylonjs/core/Cameras';
-import '@babylonjs/core/Cameras/universalCamera'; // seems to be a bug with babylonJs that requires UniversalCamera to be imported like this
+import '@babylonjs/core/Cameras/universalCamera';
+import {GlowLayer} from '@babylonjs/core';
 
 @Injectable({
   providedIn: 'root'
@@ -56,7 +56,7 @@ export class BabylonSceneService {
   env: any;
   scene: Scene;
 
-  constructor() {}
+  constructor(private deviceService: DeviceDetectorService) {}
 
   appendFromBabylonFile$(): Observable<any> {
     return fromPromise(
@@ -108,19 +108,29 @@ export class BabylonSceneService {
       // console.log(typeof mat);
       if (mat instanceof PBRMetallicRoughnessMaterial) {
         // console.log(mat);
-        mat.maxSimultaneousLights = 10 // webGL device dependant error if set above 10
+        mat.maxSimultaneousLights = 6 // webGL device dependant error if set above 10
       }
     });
 
     /* FACADE MAT */
-    // console.log(scene.materials.map(mat => mat.name));
-    // const facadeMat = scene.getMaterialByName('Facade') as PBRMetallicRoughnessMaterial;
-    // console.log(facadeMat);
-    // if (facadeMat != null) {
-    //   const shadowMap = new Texture("assets/full_scene/facade_and_road_shadow_map.jpg", scene);
-    //   facadeMat.lightmapTexture = shadowMap;
-    //   facadeMat.useLightmapAsShadowmap = false;
-    //   // facadeMat.disableLighting = true;
+    // if not desktop use a lightmap to save performance
+    // if ( !this.deviceService.isDesktop() ) {
+    const facadeMat = scene.getMaterialByName('Facade') as PBRMetallicRoughnessMaterial;
+    if (facadeMat != null) {
+      const facadeLightMap = new Texture("assets/lightmaps/Facade_and_road_combined_lightmap_4k.jpg", scene);
+      facadeMat.lightmapTexture = facadeLightMap;
+      facadeMat.useLightmapAsShadowmap = true;
+    }
+
+    /* BACK WALL MAT */
+    // if not desktop use a lightmap to save performance
+    // if ( !this.deviceService.isDesktop() ) {
+    const backwallMat = scene.getMaterialByName('backwall_mat') as PBRMetallicRoughnessMaterial;
+    if (backwallMat != null) {
+      const backwallLightMap = new Texture("assets/lightmaps/wall_backShape_lightmap_1k_2.jpg", scene);
+      backwallMat.lightmapTexture = backwallLightMap;
+      backwallMat.useLightmapAsShadowmap = false
+    }
     // }
 
     /* GLASS MAT */
@@ -152,23 +162,10 @@ export class BabylonSceneService {
 
     glassMat.environmentTexture = this.windowReflectionProbe.cubeTexture;
 
-    /* AC UNIT */
+    // const crossTheStreetLight: Light = scene.getNodeByName('CrossTheStreetLight') as Light;
+    // crossTheStreetLight.intensity = 10;
 
-    // newGlassMat.reflectionTexture = this.windowReflectionProbe.cubeTexture;
 
-    // glassNode.material = newGlassMat;
-    // console.log(origGlassMat);
-    // if (origGlassMat != null) {
-    //   origGlassMat.alpha = 0.2;
-    //
-    //   glassMat.re
-    //   glassMat.alphaMode = 4 // 4 | ALPHA_MULTIPLY
-    // var lightmap = new Texture("assets/full_scene2/Facade_and_road_combinedShape_blk5.jpg", this.scene);
-    // facadeMat.lightmapTexture = lightmap;
-    // facadeMat.useLightmapAsShadowmap = false;
-    // facadeMat.disableLighting = true;
-    // }
-    //
     /* SHADOWS */
     /* Create SHADOW GENERATORS */
     scene.lights.forEach((light) => {
@@ -182,7 +179,7 @@ export class BabylonSceneService {
           );
         } else {
           this.shadowGenerators.push(
-            new ShadowGenerator(4096, light)
+            new ShadowGenerator(1024, light)
           );
         }
 
@@ -213,6 +210,9 @@ export class BabylonSceneService {
         gen!.getShadowMap()!.refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONCE;
       }
     });
+
+
+
 
     /* TVs */
     this.topTV = scene.getNodeByName('TV2') as Mesh;
@@ -290,11 +290,20 @@ export class BabylonSceneService {
       "projectsTex", projectsVideoSources, scene, false, false, 0, videoSettings);
 
     projectsMat.emissiveColor = Color3.White();
-
     bottomTVScreen.material = projectsMat;
 
+    /* GLOW */
+    var gl = new GlowLayer("glow", this.scene, {
+      mainTextureFixedSize: 2048,
+      blurKernelSize: 256
+    });
+    gl.intensity = 1;
 
-    // this.onSceneLoadedAndSetup$.next(scene);
+    gl.addExcludedMesh(topTVScreen);
+    gl.addExcludedMesh(middleTVScreen);
+    gl.addExcludedMesh(bottomTVScreen);
+
+
   }
 
   /**
