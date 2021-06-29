@@ -15,6 +15,7 @@ export function combine2() {
 
           datas.forEach((collection) => {
             for (const [key, value] of Object.entries(collection)) {
+              // @ts-ignore
               datasMap[key] = value;
             }
           });
@@ -43,6 +44,7 @@ export function combine() {
     datas.forEach((collection) => {
 
       for (const [key, value] of Object.entries(collection)) {
+        // @ts-ignore
         datasMap[key] = value;
       }
     });

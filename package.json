@@ -26,6 +26,7 @@
     "@babylonjs/materials": "^4.2.0",
     "css-element-queries": "^1.2.3",
     "ngx-device-detector": "^2.1.1",
+    "rx-ease": "^2.0.0",
     "rxjs": "~6.6.0",
     "tslib": "^2.1.0",
     "zone.js": "~0.11.4"

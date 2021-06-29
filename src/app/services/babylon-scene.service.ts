@@ -8,7 +8,7 @@ import {DeviceDetectorService} from 'ngx-device-detector';
 import {SpotLight} from '@babylonjs/core/Lights';
 import {ShadowGenerator} from '@babylonjs/core/Lights/Shadows';
 import {AbstractMesh, Mesh} from '@babylonjs/core/Meshes';
-import {Color3} from '@babylonjs/core/Maths/math';
+import {Color3, Vector3} from '@babylonjs/core/Maths/math';
 import {Material, PBRMetallicRoughnessMaterial, StandardMaterial, Texture} from '@babylonjs/core/Materials';
 import {RenderTargetTexture, VideoTexture} from '@babylonjs/core/Materials/Textures';
 import {Scene} from '@babylonjs/core/scene';
@@ -31,6 +31,8 @@ export class BabylonSceneService {
   engine: Engine;
   canvas: HTMLCanvasElement;
   camera: UniversalCamera;
+  cameraMainPos: Vector3;
+  cameraProjectsPos: Vector3;
 
   shadowGenerators: ShadowGenerator[] = [];
 
@@ -93,7 +95,13 @@ export class BabylonSceneService {
 
   handleLoadedStaticBabylonFile(scene: Scene): void {
     /* CAMERA */
-    this.camera = scene.cameras[0] as UniversalCamera;
+    // this.camera = scene.cameras[0] as UniversalCamera;
+
+    this.camera = scene.getNodeByName('cameraMain') as UniversalCamera;
+    this.cameraMainPos = this.camera.position.clone(); // clone
+
+    // we only care about its position since we animate the main camera to that position
+    this.cameraProjectsPos = ( scene.getNodeByName('cameraProjects') as UniversalCamera ).position.clone(); // clone
 
     /* MATERIAL MAX LIGHTS LIMIT INCREASE */
     scene.materials.forEach((mat: Material) => {
