@@ -1,3 +1,6 @@
+@angular/animations
+MIT
+
 @angular/cdk
 MIT
 The MIT License
@@ -209,6 +212,9 @@ THE SOFTWARE.
 
 
 ngx-device-detector
+MIT
+
+rx-ease
 MIT
 
 rxjs
