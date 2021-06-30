@@ -1,8 +1,9 @@
 
-<div fxLayout="row" fxLayoutAlign="center center" class="wrapper">
+<div fxLayout="row" fxLayoutAlign="center center" class="wrapper" (click)="goBackToMain()">
 
   <div class="container">
     <h1>Projects</h1>
+    <span class="exit">(Click to go back)</span>
 
     <app-sub-project *ngFor="let project of projects" [project]="project"></app-sub-project>
   </div>

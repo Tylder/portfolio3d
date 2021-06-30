@@ -2,6 +2,7 @@ import {Component, OnInit} from '@angular/core';
 import {animate, state, style, transition, trigger} from '@angular/animations';
 import {projects as _projects} from '../../data/projects';
 import {Project} from '../../models/project';
+import {CameraService} from '../../services/camera.service';
 
 @Component({
   selector: 'app-projects',
@@ -31,7 +32,11 @@ export class ProjectsComponent implements OnInit {
 
   projects: Project[] = _projects; // so that we can reach it in the template
 
-  constructor() {
+  constructor(private camService: CameraService) {
+  }
+
+  goBackToMain() {
+    this.camService.moveBaseCameraPositionName('main');
   }
 
   ngOnInit(): void {

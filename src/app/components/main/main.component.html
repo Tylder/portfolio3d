@@ -27,7 +27,7 @@
     <p class="fpsLabel">FPS: {{this.babylonSceneService.engine.getFps() | number: '1.2-2'}}</p>
   </div>
 
-  <app-projects *ngIf="(currentCameraPos$ | async) === 'projects'" class="fullpage-container"></app-projects>
+  <app-projects *ngIf="(camService.currentCameraPos$ | async)?.name === 'projects'" class="fullpage-container"></app-projects>
 
 </div>
 
