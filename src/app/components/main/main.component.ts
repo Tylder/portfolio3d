@@ -1,33 +1,18 @@
 import {DOCUMENT} from '@angular/common';
 import {AfterViewInit, Component, ElementRef, Inject, NgZone, OnDestroy, ViewChild} from '@angular/core';
-import {BehaviorSubject, combineLatest, fromEvent, Observable, of, ReplaySubject, Subject} from 'rxjs';
-import {filter, map, startWith, switchMap, take, takeUntil, takeWhile, tap, withLatestFrom} from 'rxjs/operators';
-import {WindowSizeService} from '../../services/window-size.service';
+import {BehaviorSubject, fromEvent, Observable, ReplaySubject, Subject} from 'rxjs';
+import {filter, map, take, takeUntil, tap, withLatestFrom} from 'rxjs/operators';
 import {PickingInfo} from '@babylonjs/core/Collisions/pickingInfo';
 import {filterNil} from '../../rxjs_ops/FilterNil';
 import {environment} from '../../../environments/environment';
 import {BabylonSceneService} from '../../services/babylon-scene.service';
+import {CameraPosition, CameraService} from '../../services/camera.service';
 
 /* BABYLON IMPORTS */
 import {AbstractMesh, Mesh} from '@babylonjs/core/Meshes';
-import {Color3, Scalar, Vector2} from '@babylonjs/core/Maths';
+import {Color3} from '@babylonjs/core/Maths';
 import {Scene} from '@babylonjs/core/scene';
 import {Animation as BabylonAnimation} from '@babylonjs/core/Animations';
-import {Vector3} from '@babylonjs/core/Maths/math';
-import easeOperator from 'rx-ease';
-
-
-export interface CameraLimits {
-  minX: number;
-  maxX: number;
-  minY: number;
-  maxY: number;
-}
-
-enum CameraPos {
-  main = 'main',
-  projects = 'projects'
-}
 
 @Component({
   selector: 'app-main',
@@ -42,13 +27,6 @@ export class MainComponent implements AfterViewInit, OnDestroy {
 
   tvClicked$: Observable<Mesh>;
 
-  // the camera position in which we move around when when the mouse is moved, used so that we can animate it
-  cameraBasePos$: ReplaySubject<Vector3> = new ReplaySubject<Vector3>(1);
-  relativeMousePos$: ReplaySubject<Vector2> = new ReplaySubject<Vector2>(1);
-  relativeDeviceMotion$: ReplaySubject<Vector2> = new ReplaySubject<Vector2>(1);
-
-  currentCameraPos$: BehaviorSubject<CameraPos> = new BehaviorSubject<CameraPos>(CameraPos.main);
-
   // cameraPanToProjectsPosAnim: BabylonAnimation;
   // cameraPanToMainPosAnim: BabylonAnimation;
 
@@ -59,8 +37,6 @@ export class MainComponent implements AfterViewInit, OnDestroy {
   pKeyPressedEvent$: Observable<KeyboardEvent> = fromEvent<KeyboardEvent>(document.body, 'keydown').pipe(
     filter((event: KeyboardEvent) => event.code === 'KeyP')
   );
-
-
 
 
   //
@@ -86,21 +62,14 @@ export class MainComponent implements AfterViewInit, OnDestroy {
   //   }),
   // );
 
-  deviceMotionPosition$: BehaviorSubject<Vector3> = new BehaviorSubject(new Vector3());
 
-  cameraLimits: CameraLimits = {
-    minX: - 1.5,
-    maxX: 1.5,
-    minY: 1,
-    maxY: - 1,
-  };
 
   isShowBackdrop$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
   isShowEmail$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
   hintText$: ReplaySubject<string | null> = new ReplaySubject<string | null>(1);
 
-  mouseMoveEvent$: Observable<any> = fromEvent<MouseEvent>(document.body, 'mousemove');
+
   clickEvent$: Observable<any>;
 
   isShowFps$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
@@ -110,20 +79,10 @@ export class MainComponent implements AfterViewInit, OnDestroy {
   constructor(@Inject(DOCUMENT) readonly doc: Document,
               private readonly ngZone: NgZone,
               public babylonSceneService: BabylonSceneService,
-              private windowSizeService: WindowSizeService,
+              public camService: CameraService,
               ) {
 
-    // show backdrop if not on main camera pos
-    this.currentCameraPos$.pipe(
-      takeUntil(this.destroy$),
-      tap((pos: CameraPos) => {
-        if (pos == CameraPos.main) {
-          this.isShowBackdrop$.next(false);
-        } else {
-          this.isShowBackdrop$.next(true);
-        }
-      })
-    ).subscribe();
+
 
     // this.deviceOrientation$.pipe(
     //   // debounceTime(200),
@@ -176,46 +135,42 @@ export class MainComponent implements AfterViewInit, OnDestroy {
     this.babylonSceneService.createScene$(this.canvasRef).pipe(
       take(1)
     ).subscribe((scene: Scene) => {
-      this.cameraBasePos$.next(this.babylonSceneService.cameraMainPos); // start pos
+      this.camService.camera = this.babylonSceneService.camera;
+      this.camService.cameraBasePos$.next(this.babylonSceneService.cameraMainPos); // start pos
+
+      this.camService.cameraPositions.push(
+        {
+          name: 'main',
+          pos: this.babylonSceneService.cameraMainPos
+        },
+        {
+          name: 'projects',
+          pos: this.babylonSceneService.cameraProjectsPos
+        }
+      );
+
       this.createAndListenForSceneActions(scene);
       this.createFanAnimations(scene);
       this.create24HrsOpenAnimation(scene);
       // this.createCameraMainToProjectAnimation(scene);
       this.babylonSceneService.start(this.ngZone, true);
 
+      // show backdrop if not on main camera pos
+      this.camService.currentCameraPos$.pipe(
+        takeUntil(this.destroy$),
+        tap((pos: CameraPosition) => {
+          if (pos.name == 'main') {
+            this.isShowBackdrop$.next(false);
+          } else {
+            this.isShowBackdrop$.next(true);
+          }
+        })
+      ).subscribe();
+
     })
   }
 
-  moveBaseCameraPos$(newPos: Vector3): Observable<any> {
 
-    /* https://www.npmjs.com/package/rx-ease */
-
-    return this.cameraBasePos$.pipe(
-      take(1),
-      switchMap((startPos: Vector3) => {
-        return of(null).pipe(
-          take(1),
-          map(() => newPos),
-          startWith(startPos),
-          map((pos: Vector3) => {
-            return {
-              x: pos.x,
-              y: pos.y
-            }
-          }),
-          easeOperator({
-            x: [120, 18],
-            y: [120, 18]
-          }),
-          map(({x, y}) => {
-            return new Vector3(x, y, startPos.z)
-          }),
-        )
-      }),
-      tap(pos => this.cameraBasePos$.next(pos)),
-      takeWhile(pos => pos.x != newPos.x) // only way I could see to end the observable
-    );
-  }
 
   isTouchScreenDevice(): boolean {
     return 'ontouchstart' in window || (navigator.maxTouchPoints != null && navigator.maxTouchPoints > 0);
@@ -403,9 +358,6 @@ export class MainComponent implements AfterViewInit, OnDestroy {
   createAndListenForSceneActions(scene: Scene) {
 
 
-
-    this.createRelativeMousePos();
-
     // this.relativeMousePos$.subscribe(val => console.log(val));
 
     this.spaceBarPressedEvent$.pipe(
@@ -461,9 +413,10 @@ export class MainComponent implements AfterViewInit, OnDestroy {
     // console.log(this.isTouchScreenDevice());
 
     if (!this.isTouchScreenDevice()) {
-      this.moveCameraByMousePos();
+      this.camService.moveCameraByMousePos();
     } else {
-      this.moveCameraByDeviceMotion();
+
+      this.camService.moveCameraByDeviceMotion();
     }
 
     scene.registerBeforeRender(() => {
@@ -471,34 +424,7 @@ export class MainComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  /**
-   * Move camera in x and y by cameraBasePos and relativeMousePos$
-   */
-  moveCameraByMousePos(): void {
 
-    combineLatest([this.cameraBasePos$, this.relativeMousePos$]).pipe(
-      // tap(([basePos, relativePos]) => console.log(basePos + ' ' + relativePos )),
-      tap(([basePos, relativePos]) => {
-        if (relativePos) {
-          const newCamX = Scalar.Lerp(basePos.x + this.cameraLimits.minX, basePos.x + this.cameraLimits.maxX, relativePos.x);
-          const newCamY = Scalar.Lerp(basePos.y + this.cameraLimits.minY, basePos.y + this.cameraLimits.maxY, relativePos.y);
-          this.babylonSceneService.camera.position.x = newCamX;
-          this.babylonSceneService.camera.position.y = newCamY;
-        }
-      })
-    ).subscribe()
-  }
-
-  moveCameraByDeviceMotion(): void {
-    // this.deviceAcceleration$.pipe(
-    //   tap((acc) => {
-    //     // const newCamX = Scalar.Lerp(this.cameraLimits.minX, this.cameraLimits.maxX, relativePos.x);
-    //     // const newCamY = Scalar.Lerp(this.cameraLimits.minY, this.cameraLimits.maxY, relativePos.y);
-    //     // this.babylonSceneService.camera.position.x = newCamX;
-    //     // this.babylonSceneService.camera.position.y = newCamY;
-    //   })
-    // ).subscribe()
-  }
 
   handleTVClicks(): void {
     this.tvClicked$.subscribe((mesh: Mesh) => {
@@ -517,8 +443,8 @@ export class MainComponent implements AfterViewInit, OnDestroy {
           console.log('TV');
           // this.cameraBasePos$.next(this.babylonSceneService.cameraProjectsPos);
           this.hintText$.next(null);
-          this.moveBaseCameraPos$(this.babylonSceneService.cameraProjectsPos)
-            .subscribe(() => {}, () => {}, () => this.currentCameraPos$.next(CameraPos.projects))
+          this.camService.moveBaseCameraPositionName('projects');
+
           // this.babylonSceneService.camera.position.x = this.babylonSceneService.cameraProjectsPos.x;
           // console.log(this.babylonSceneService.camera.animations);
           // this.babylonSceneService.camera.beginAnimation('cameraPanToProjects');
@@ -530,46 +456,9 @@ export class MainComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  /**
-   * Create relative mouse pos to screen size.
-   * x: 0, y: 0 is top left corner.
-   * x: 1, y: 1 is bottom right corner.
-   */
-  createRelativeMousePos(): void {
-    combineLatest(
-      [
-        this.windowSizeService.windowSize$,
-        this.mouseMoveEvent$.pipe(
-          takeUntil(this.destroy$),
-          map((event: MouseEvent) => new Vector2(event.clientX, event.clientY)),
-        )
-      ]
-    ).pipe(
-      // tap(val => console.log(val)),
-      map(([size, mousePos]) => {
-        // make relative to window size
-        mousePos.x = mousePos.x / size.width;
-        mousePos.y = mousePos.y / size.height;
 
-        return mousePos;
-      })
-    ).subscribe(relativePos => this.relativeMousePos$.next(relativePos));
-  }
 
-  createRelativeDeviceMotion(): void {
-    combineLatest(
-      [
-        this.windowSizeService.windowSize$,
-        this.deviceMotionPosition$
-      ]
-    ).pipe(
-      takeUntil(this.destroy$),
-      // tap(val => console.log(val)),
-      map(([size, pos]) => {
-        return new Vector2(pos.x / size.width, pos.y / size.height);
-      })
-    ).subscribe(relativePos => this.relativeMousePos$.next(relativePos));
-  }
+
 
   getTopMeshParent(mesh: AbstractMesh): AbstractMesh {
 
