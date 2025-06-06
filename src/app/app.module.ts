@@ -27,8 +27,6 @@ import {SubProjectComponent} from './components/sub-project/sub-project.componen
     FlexLayoutModule,
     ClipboardModule,
   ],
-  entryComponents: [
-  ],
   providers: [
   ],
   bootstrap: [AppComponent]
