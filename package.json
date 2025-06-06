@@ -11,19 +11,19 @@
   },
   "private": true,
   "dependencies": {
-    "@angular/animations": "~12.0.1",
-    "@angular/cdk": "^12.0.5",
-    "@angular/common": "~12.0.1",
-    "@angular/compiler": "~12.0.1",
-    "@angular/core": "~12.0.1",
+    "@angular/animations": "13",
+    "@angular/cdk": "13",
+    "@angular/common": "13",
+    "@angular/compiler": "13",
+    "@angular/core": "13",
     "@angular/flex-layout": "^12.0.0-beta.34",
-    "@angular/forms": "~12.0.1",
-    "@angular/platform-browser": "~12.0.1",
-    "@angular/platform-browser-dynamic": "~12.0.1",
-    "@angular/router": "~12.0.1",
-    "@babylonjs/core": "^4.2.0",
-    "@babylonjs/loaders": "^4.2.0",
-    "@babylonjs/materials": "^4.2.0",
+    "@angular/forms": "13",
+    "@angular/platform-browser": "13",
+    "@angular/platform-browser-dynamic": "13",
+    "@angular/router": "13",
+    "@babylonjs/core": "^5.57.1",
+    "@babylonjs/loaders": "^5.57.1",
+    "@babylonjs/materials": "^5.57.1",
     "css-element-queries": "^1.2.3",
     "ngx-device-detector": "^2.1.1",
     "rx-ease": "^2.0.0",
@@ -32,9 +32,9 @@
     "zone.js": "~0.11.4"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "~12.0.1",
-    "@angular/cli": "~12.0.1",
-    "@angular/compiler-cli": "~12.0.1",
+    "@angular-devkit/build-angular": "13",
+    "@angular/cli": "13",
+    "@angular/compiler-cli": "13",
     "@types/jasmine": "~3.6.0",
     "@types/node": "^12.11.1",
     "angular-cli-ghpages": "^1.0.0-rc.2",
@@ -44,6 +44,6 @@
     "karma-coverage": "~2.0.3",
     "karma-jasmine": "~4.0.0",
     "karma-jasmine-html-reporter": "^1.5.0",
-    "typescript": "~4.2.3"
+    "typescript": "~4.6.4"
   }
 }
